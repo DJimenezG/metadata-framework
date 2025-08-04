@@ -1,0 +1,32 @@
+{
+  "dataflows": [
+    {
+      "name": "prueba-acceso",
+      "inputs": [
+        {
+          "path": "data/test_input.csv",
+          "format": "csv",
+          "options": {
+            "header": "true"
+          }
+        }
+      ],
+      "outputs": [
+        {
+          "output_path": "output/path",
+          "save_mode": "overwrite",
+          "format": "csv",
+          "options": {
+            "header": "true"
+          }
+        }
+      ],
+      "transformations": [
+        {
+          "operation": "filter",
+          "condition": "edad > 25"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+# === Scala / SBT ===
+target/
+project/target/
+project/project/
+.idea/
+.bsp/
+.metals/
+.scala-build/
+.cache/
+logs/
+
+# === OS / Editor / Tool specific ===
+.DS_Store
+*.log
+*.tmp
+*.swp
+*.bak
+*.iml
+
+# === Spark output / intermediate data ===
+data/output/
+spark-warehouse/
+*.crc
+
+# === JARs / build artifacts ===
+*.jar
+*.class
+
+# === Config personal ===
+.env
+*.ipynb_checkpoints
+.vscode/
+
+# === CSVs / test outputs (mantén solo si son necesarios) ===
+data2024.csv
+data2025.csv

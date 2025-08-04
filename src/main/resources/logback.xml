@@ -1,0 +1,32 @@
+<configuration debug="false">
+
+    <!-- Appender consola -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} | [%thread] | %-5level | [%logger{36}] --> %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Appender a archivo con rotación diaria -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>/app/logs/metadata_run.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>/app/logs/metadata_run_%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>7</maxHistory> <!-- Guarda los logs de los últimos 7 días -->
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} | [%thread] | %-5level | [%logger{36}] --> %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="FILE"/>
+    </root>
+
+    <!-- Logger específico para tus clases -->
+    <logger name="main" level="DEBUG"/>
+    <logger name="org.apache.spark" level="WARN"/>
+    <logger name="org.sparkproject" level="WARN"/>
+</configuration>
