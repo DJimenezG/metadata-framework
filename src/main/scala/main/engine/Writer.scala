@@ -9,7 +9,42 @@ object Writer {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  /** Valida y convierte el save_mode del config a un SaveMode válido de Spark */
+  /**
+   * Itera sobre los outputs definidos en el metadata y escribe los DataFrames correspondientes
+   * según el tipo y el modo especificado.
+   * @param spark SparkSession activa.
+   * @param outputs Lista de objetos Output (con config y tipo) definidos en el metadata.
+   * @param datasets Mapa con todos los DataFrames generados por las transformaciones previas.
+   */
+  def writeOutputs(spark: SparkSession, outputs: List[Output], datasets: Map[String, DataFrame]): Unit = {
+
+    outputs.foreach { output =>
+      val df = datasets(output.input)
+      val cfg = output.config
+
+      output.`type` match {
+        case "file" =>
+          writeFile(df, cfg)
+        case "delta" =>
+          cfg.save_mode match {
+            case "append" =>
+              writeDeltaAppend(df, cfg)
+            case "merge" =>
+              writeDeltaMerge(spark, df, cfg)
+            case _ =>
+              logger.info(s"- Modo de guardado no soportado para delta: ${cfg.save_mode}.......................................................")
+          }
+        case other =>
+          logger.info(s"- Tipo de output no soportado: $other.......................................................")
+      }
+    }
+  }
+
+  /**
+   * Valida y convierte el save_mode del config a un SaveMode válido de Spark
+   * @param mode Modo de guardado leído del metadata.json.
+   * @return SaveMode compatible con Spark.
+   */
   private def parseSaveMode(mode: String): SaveMode = {
 
     mode.toUpperCase match {
@@ -20,34 +55,11 @@ object Writer {
     }
   }
 
-  def writeOutputs(spark: SparkSession, outputs: List[Output], datasets: Map[String, DataFrame]): Unit = {
-
-    outputs.foreach { output =>
-      val df = datasets(output.input)
-      val cfg = output.config
-
-      output.`type` match {
-        case "file" =>
-          writeFile(df, cfg)
-
-        case "delta" =>
-          cfg.save_mode match {
-            case "append" =>
-              writeDeltaAppend(df, cfg)
-
-            case "merge" =>
-              writeDeltaMerge(spark, df, cfg)
-
-            case _ =>
-              logger.info(s"- Modo de guardado no soportado para delta: ${cfg.save_mode}.......................................................")
-          }
-
-        case other =>
-          logger.info(s"- Tipo de output no soportado: $other.......................................................")
-      }
-    }
-  }
-
+  /**
+   * Escribe un DataFrame en un archivo de salida (parquet, json, csv...) según la configuración del metadata
+   * @param df DataFrame a escribir.
+   * @param cfg Configuración de salida (formato, path, modo, partición).
+   */
   def writeFile(df: DataFrame, cfg: OutputConfig): Unit = {
 
     logger.info(s"- .....................................................................................................")
@@ -65,11 +77,15 @@ object Writer {
       case Some(partitionCol) => writer.partitionBy(partitionCol)
       case None               => writer
     }
-
     finalWriter.save(cfg.path.get)
     logger.info(s"- Escrito archivo en ${cfg.path.get} con modo ${cfg.save_mode}.......................................................")
   }
 
+  /**
+   * Escribe en una tabla Delta existente haciendo un 'Append'.
+   * @param df DataFrame a añadir.
+   * @param cfg Configuración con el nombre lógico de tabla y demás opciones.
+   */
   private def writeDeltaAppend(df: DataFrame, cfg: OutputConfig): Unit = {
 
     logger.info(s"- ......................................................................................................................")
@@ -85,14 +101,19 @@ object Writer {
       case other =>
         throw new IllegalArgumentException(s"Tabla '$other' no está mapeada a ninguna ruta Delta válida.")
     }
-
     df.write
       .format("delta")
       .mode(SaveMode.Append)
       .save(path)
     logger.info(s"- Append sobre tabla Delta: ${cfg.table.get}.......................................................")
   }
-
+  /**
+   * Realiza una operación Merge (Upsert) sobre una tabla Delta.
+   * Si la tabla no existe, se crea automáticamente.
+   * @param spark SparkSession activa.
+   * @param df DataFrame con nuevos datos.
+   * @param cfg Configuración del output, incluyendo claves primarias y path.
+   */
   private def writeDeltaMerge(spark: SparkSession, df: DataFrame, cfg: OutputConfig): Unit = {
 
     logger.info(s"- ......................................................................................................................")
@@ -133,10 +154,7 @@ object Writer {
       .mkString(" AND ")
 
     targetTable.as("target")
-      .merge(
-        dfDeduplicated.as("source"),
-        mergeCondition
-      )
+      .merge(dfDeduplicated.as("source"), mergeCondition)
       .whenMatched()
       .updateAll()
       .whenNotMatched()

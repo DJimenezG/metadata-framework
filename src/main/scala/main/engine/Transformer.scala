@@ -16,11 +16,7 @@ object Transformer {
    * @param inputs Map de DataFrames con nombres definidos en los inputs
    * @return Map actualizado con cada transformación nombrada
    */
-  def applyTransformations(
-      spark: SparkSession,
-      transformations: List[Transformation],
-      inputs: Map[String, DataFrame]
-  ): Map[String, DataFrame] = {
+  def applyTransformations(spark: SparkSession, transformations: List[Transformation], inputs: Map[String, DataFrame]): Map[String, DataFrame] = {
 
     // Mapa mutable que irá guardando las salidas intermedias
     var datasets = inputs
@@ -45,7 +41,6 @@ object Transformer {
           logger.info(s"- Transformación no soportada: $other.......................................................")
       }
     }
-
     datasets
   }
 }

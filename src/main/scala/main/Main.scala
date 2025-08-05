@@ -9,6 +9,15 @@ object Main {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
 
+  /**
+   * Función principal que lee un archivo `metadata.json` que describe un flujo de datos (dataflow)
+   * compuesto por entradas (inputs), transformaciones y salidas (outputs).
+   * @param args Argumentos del script de entrada
+   *  - args(0): Ruta al archivo `metadata.json` con la configuración del dataflow.
+   *  - args(1): Año de referencia (formato yyyy) que se inyectará dinámicamente en las rutas de entrada/salida.
+   *
+   * Ejemplo de ejecución: spark-submit ... /app/metadata.json 2024
+   */
   def main(args: Array[String]): Unit = {
 
     if (args.length != 2 || !args(1).matches("\\d{4}")) {
