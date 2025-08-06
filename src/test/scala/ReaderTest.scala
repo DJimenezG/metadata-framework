@@ -1,4 +1,3 @@
-package metadata
 
 import org.apache.spark.sql.SparkSession
 import org.scalatest.funsuite.AnyFunSuite
@@ -20,7 +19,7 @@ class ReaderTest extends AnyFunSuite {
     val dataflow = Dataflow("df1", List(input), Nil, Nil)
     val metadata = Metadata(List(dataflow))
 
-    val df = Reader.loadInputs(spark, metadata.dataflows.head.inputs)("test_input")
+    val df = Reader.loadInputs(spark, metadata.dataflows.head.inputs, "2024")("test_input")
 
     assert(df.count() > 0)
     assert(df.columns.contains("nombre")) // Ajusta a tu CSV real

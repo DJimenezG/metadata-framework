@@ -4,27 +4,50 @@
       "name": "prueba-acceso",
       "inputs": [
         {
-          "path": "data/test_input.csv",
-          "format": "csv",
-          "options": {
+          "name": "test_input",
+          "type": "file",
+          "config": {
+            "path": "data/test_input.csv",
+            "format": "csv"
+          },
+          "spark_options": {
             "header": "true"
           }
         }
       ],
       "outputs": [
         {
-          "output_path": "output/path",
-          "save_mode": "overwrite",
-          "format": "csv",
-          "options": {
-            "header": "true"
+          "name": "test_output",
+          "type": "file",
+          "input": "addPais",
+          "config": {
+            "path": "output/test_output.csv",
+            "format": "csv",
+            "save_mode": "overwrite"
           }
         }
       ],
       "transformations": [
         {
-          "operation": "filter",
-          "condition": "edad > 25"
+          "name": "filtroEdad",
+          "type": "filter",
+          "input": "test_input",
+          "config": {
+            "filter":"'edad > 30'"
+          }
+        },
+        {
+          "name": "addPais",
+          "type": "add_fields",
+          "input": "filtroEdad",
+          "config": {
+            "fields": [
+              {
+                "name": "pais",
+                "expression": "España"
+              }
+            ]
+          }
         }
       ]
     }

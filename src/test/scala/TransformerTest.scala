@@ -1,4 +1,3 @@
-package metadata
 
 import org.apache.spark.sql.SparkSession
 import org.scalatest.funsuite.AnyFunSuite
@@ -16,23 +15,27 @@ class TransformerTest extends AnyFunSuite {
 
   test("Aplica correctamente un filtro y añade campos") {
     val df = Seq(
-      ("Ana", 30),
-      ("Luis", 20)
-    ).toDF("nombre", "edad")
+      (30),
+      (20)
+    ).toDF("edad")
 
     val trans = List(
       Transformation(
         name = "filtroEdad",
         `type` = "filter",
         input = "input_df",
-        config = TransformationConfig(fields = Some(List(AddField("pais", "'España'"))), filter = Some("edad > 25")
+        config = TransformationConfig(
+          filter = Some("edad > 25"),
+          fields = None
         )
       ),
       Transformation(
         name = "addPais",
         `type` = "add_fields",
-        input = "input_df",
-        config = TransformationConfig(fields = Some(List(AddField("pais", "'España'"))), filter = None
+        input = "filtroEdad",
+        config = TransformationConfig(
+          fields = Some(List(AddField("pais", "'España'"))),
+          filter = None
         )
       )
     )
@@ -40,7 +43,10 @@ class TransformerTest extends AnyFunSuite {
     val inputs = Map("input_df" -> df)
     val transformed = Transformer.applyTransformations(spark, trans, inputs)
 
-    assert(transformed("input_df").columns.contains("pais"))
-    assert(transformed("input_df").count() == 1)
+    val result = transformed("addPais")
+    result.show()
+
+    assert(result.columns.contains("pais"))
+    assert(result.count() == 1)
   }
 }

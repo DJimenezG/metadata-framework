@@ -1,9 +1,11 @@
-package metadata
 
-import org.apache.spark.sql.{SparkSession, SaveMode}
+import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.scalatest.funsuite.AnyFunSuite
-import main.metadata.{Output, OutputConfig, Dataflow, Metadata}
+import main.metadata.{Dataflow, Metadata, Output, OutputConfig}
 import main.engine.Writer
+import org.apache.commons.io.FileUtils
+
+import java.io.File
 
 class WriterTest extends AnyFunSuite {
 
@@ -17,9 +19,12 @@ class WriterTest extends AnyFunSuite {
   test("Escribe correctamente en modo overwrite") {
     val df = Seq(("Alice", 30), ("Bob", 25)).toDF("nombre", "edad")
 
+    val outputPath = new File("src/test/resources/test_output")
+    if (outputPath.exists()) FileUtils.deleteDirectory(outputPath)
+
     val outputCfg = OutputConfig(
-      path = Some("src/test/resources/test_output"),
-      format = Some("csv"),
+      path = Some(outputPath.getAbsolutePath),
+      format = Some("parquet"),
       save_mode = "overwrite",
       partition = None,
       table = None,
@@ -34,7 +39,7 @@ class WriterTest extends AnyFunSuite {
 
     Writer.writeFile(df, outputCfg)
 
-    val writtenDF = spark.read.option("header", "true").csv("src/test/resources/test_output")
+    val writtenDF = spark.read.parquet("src/test/resources/test_output")
     assert(writtenDF.columns.contains("nombre"))
   }
 }
