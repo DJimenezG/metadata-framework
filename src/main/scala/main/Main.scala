@@ -20,10 +20,10 @@ object Main {
    */
   def main(args: Array[String]): Unit = {
 
+    // Argumentos
     if (args.length != 2 || !args(1).matches("\\d{4}")) {
       throw new IllegalArgumentException(" Se debe pasar el año como argumento. Uso esperado: spark-submit ... <metadata.json> <año>. Ejemplo: /app/metadata.json 2024")
     }
-
     val metadataPath = args(0)
     val year = args(1)
 

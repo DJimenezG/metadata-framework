@@ -70,7 +70,7 @@ object Writer {
     new java.io.File(cfg.path.get).mkdirs()
 
     val writer = df.write
-      .format(cfg.format.getOrElse("json"))
+      .format(cfg.format.getOrElse("json")) // formato json por defecto
       .mode(parseSaveMode(cfg.save_mode))
 
     val finalWriter = cfg.partition match {
@@ -125,6 +125,14 @@ object Writer {
       throw new IllegalArgumentException(s" Merge requiere definir primary_key para $tableName")
     }
 
+    // Comprobacion de que las pks son columnas de la tabla
+    val dfColumns = df.columns.toSet
+    val missingKeys = primaryKeys.filterNot(dfColumns.contains)
+    if (missingKeys.nonEmpty) {
+      throw new IllegalArgumentException(s" Las siguientes pks no existen en el DataFrame para la tabla $tableName: ${missingKeys.mkString(", ")}"
+      )
+    }
+
     // Verificar si la tabla Delta existe
     val tableExists = spark.catalog.tableExists(tableName)
 
@@ -136,23 +144,25 @@ object Writer {
       logger.info(s"- La tabla $tableName no existe. Creando como Delta table con path: $tablePath.......................................................")
       df.write
         .format("delta")
-        .mode("overwrite") // o "errorIfExists" si prefieres fallo explícito
+        .mode("overwrite")
         .save(tablePath)
 
-      spark.sql(s"CREATE TABLE $tableName USING DELTA LOCATION '$tablePath'")
+      spark.sql(s"CREATE TABLE $tableName USING DELTA LOCATION '$tablePath'") // Registro de la tabla en el catálogo Spark SQL)
       logger.info(s"- Tabla $tableName creada correctamente como Delta table en $tablePath.......................................................")
     }
 
     // Eliminación de duplicados en el DataFrame fuente usando las claves primarias
     val dfDeduplicated = df.dropDuplicates(primaryKeys)
 
-    // Realizar el merge
+    // Carga de la delta table
     val targetTable = DeltaTable.forPath(spark, tablePath)
 
+    // Condición del merge
     val mergeCondition = primaryKeys
       .map(pk => s"target.$pk = source.$pk")
       .mkString(" AND ")
 
+    // Realizar el merge
     targetTable.as("target")
       .merge(dfDeduplicated.as("source"), mergeCondition)
       .whenMatched()
